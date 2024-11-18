@@ -1,32 +1,38 @@
-# ASP.NET Core
-# Build and test ASP.NET Core projects targeting .NET Core.
-# Add steps that run tests, create a NuGet package, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
-
 trigger:
 - main
 
 pool:
-  vmImage: DharaniLocalMachine
+  name: DharaniLocalMachine  # The name of your agent pool.
+  demands:
+    - agent.name -equals Ubuntu  # Specify the specific agent name.
 
 variables:
   buildConfiguration: 'Release'
 
 steps:
+# Step 1: Restore dependencies
 - task: DotNetCoreCLI@2
   inputs:
     command: 'restore'
-    restoreArguments: '**/*.csproj'
+    projects: '**/*.csproj'  # Restores dependencies for all projects.
     feedsToUse: 'select'
+
+# Step 2: Build the project
 - task: DotNetCoreCLI@2
   inputs:
     command: 'build'
-    projects: '**/*.csproj'
-    #arguments: '--configuration Release'
+    projects: '**/*.csproj'  # Builds all projects.
+    arguments: '--configuration $(buildConfiguration)'
+
+# Step 3: Publish the project
 - task: DotNetCoreCLI@2
   inputs:
     command: 'publish'
-    publishWebProjects: true
-    arguments: '-c Release -o ./publish'
+    publishWebProjects: true  # Automatically detects web projects to publish.
+    arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
 
-
+# Step 4: Publish build artifacts
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'dotnet-publish'
